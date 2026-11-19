@@ -1,93 +1,82 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JARVIS AI</title>
 <style>
-body {
-  background: #061426;
-  color: #55dfff;
-  font-family: Arial;
-  text-align: center;
-  padding: 25px;
-}
-h1 { letter-spacing: 8px; margin-top: 50px; }
-#orb {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: #13bdf5;
-  box-shadow: 0 0 45px #13bdf5;
-  margin: 40px auto;
-  animation: glow 2s infinite alternate;
-}
-@keyframes glow {
-  to { box-shadow: 0 0 75px #13bdf5; }
-}
-button {
-  padding: 15px 22px;
-  margin: 8px;
-  border: 0;
-  border-radius: 25px;
-  background: #13bdf5;
-  font-size: 16px;
-}
-input {
-  padding: 14px;
-  width: 85%;
-  margin: 15px;
-  border-radius: 10px;
-}
-#reply { color: white; margin: 25px; }
+body{margin:0;background:#050b18;color:white;font-family:Arial;text-align:center;padding:25px 15px}
+h1{color:#00d9ff;margin-top:35px}
+.orb{width:145px;height:145px;border-radius:50%;margin:35px auto;background:radial-gradient(circle,#00d9ff,#073b70,#050b18);box-shadow:0 0 40px #00bfff;animation:pulse 2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 65px #00d9ff}}
+input{width:90%;padding:15px;border-radius:12px;border:1px solid #00d9ff;background:#101c30;color:white;font-size:16px;box-sizing:border-box}
+button{padding:13px 20px;margin:8px;border:0;border-radius:12px;background:#00bfff;color:#00101c;font-weight:bold;font-size:16px}
+#reply{background:#101c30;padding:18px;border-radius:12px;margin-top:20px;min-height:60px;line-height:1.5}
 </style>
 </head>
 <body>
-<h1>JARVIS</h1>
-<p>YOUR PERSONAL AI ASSISTANT</p>
-<div id="orb"></div>
-<button onclick="listen()">🎤 TALK TO JARVIS</button>
+<h1>J.A.R.V.I.S</h1>
+<p>Your Personal AI Assistant</p>
+<div class="orb"></div>
+<input id="message" placeholder="Ask JARVIS anything...">
 <br>
-<input id="msg" placeholder="Type your command">
-<button onclick="run()">SEND</button>
-<div id="reply">Hello! I am JARVIS. Ready to help you.</div>
+<button onclick="sendMessage()">SEND</button>
+<button onclick="startVoice()">🎤 SPEAK</button>
+<div id="reply">Hello! I am JARVIS. How can I help you?</div>
 
 <script>
-function speak(text) {
- document.getElementById("reply").innerText = text;
- let voice = new SpeechSynthesisUtterance(text);
- speechSynthesis.speak(voice);
+const API_URL = "https://jarvis-brain.sameerikram32.workers.dev";
+
+async function sendMessage(){
+ const input=document.getElementById("message");
+ const reply=document.getElementById("reply");
+ const message=input.value.trim();
+ if(!message)return;
+ reply.innerText="JARVIS is thinking...";
+ try{
+  const response=await fetch(API_URL,{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({message:message})
+  });
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.details||data.error||"Request failed");
+  reply.innerText=data.reply||"No reply received.";
+  speak(data.reply||"No reply received.");
+ }catch(error){
+  reply.innerText="Error: "+error.message;
+ }
 }
-function run() {
- let c = document.getElementById("msg").value.toLowerCase();
- if(c.includes("hello")) speak("Hello! I am JARVIS.");
- else if(c.includes("time")) speak("The time is " + new Date().toLocaleTimeString());
- else if(c.includes("whatsapp")) {
- speak("Opening WhatsApp");
- window.open("https://www.whatsapp.com", "_blank");
- }
- else if(c.includes("youtube")) {
- speak("Opening YouTube");
- window.open("https://www.youtube.com", "_blank");
- }
- else if(c.includes("instagram")) {
- speak("Opening Instagram");
- window.open("https://www.instagram.com", "_blank");
- }
- else speak("I am listening. More AI features will be added soon.");
+
+function speak(text){
+ const speech=new SpeechSynthesisUtterance(text);
+ speech.lang="en-US";
+ speechSynthesis.speak(speech);
 }
-function listen() {
- let Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
- if(!Speech) { speak("Voice recognition is not supported in this browser."); return; }
- let r = new Speech();
- r.lang = "en-US";
- r.onresult = e => {
- document.getElementById("msg").value = e.results[0][0].transcript;
- run();
+
+function startVoice(){
+ const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!Recognition){
+  alert("Voice recognition is not supported in this browser.");
+  return;
+ }
+ const recognition=new Recognition();
+ recognition.lang="ur-PK";
+ recognition.onresult=function(event){
+  document.getElementById("message").value=event.results[0][0].transcript;
+  sendMessage();
  };
- r.start();
+ recognition.onerror=function(){
+  document.getElementById("reply").innerText="Mic error. Please try again.";
+ };
+ recognition.start();
 }
+
+document.getElementById("message").addEventListener("keydown",function(e){
+ if(e.key==="Enter")sendMessage();
+});
 </script>
 </body>
 </html>
